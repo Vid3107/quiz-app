@@ -1,78 +1,39 @@
 import 'package:flutter/material.dart';
-import 'package:project_1/home/fetchpost.dart';
+import 'package:project_1/services/firestore.dart';
 import 'package:project_1/shared/bottom_nav.dart';
+import 'package:project_1/shared/loading.dart';
 
-class TopicsScreen extends StatefulWidget {
+class TopicsScreen extends StatelessWidget {
   const TopicsScreen({super.key});
 
   @override
-  State<TopicsScreen> createState() => _TopicsScreenState();
-}
-
-class _TopicsScreenState extends State<TopicsScreen> {
-  late Future<Map<String, dynamic>> _jsonResponse;
-  @override
-  void initState() {
-    super.initState();
-    _jsonResponse = FetchPost().fetchPost();
-  }
-
-  Future<void> _fetchJoke() async {
-    setState(() {
-      _jsonResponse = FetchPost().fetchPost();
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Fetch api'),
-        centerTitle: true,
-      ),
-      bottomNavigationBar: const BottomNavBar(),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(30),
-              child: FutureBuilder<Map<String, dynamic>>(
-                future: _jsonResponse,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const CircularProgressIndicator();
-                  } else if (snapshot.hasError) {
-                    return Text('Error: ${snapshot.error}');
-                  } else {
-                    final joke = snapshot.data?['joke'];
-                    final category = snapshot.data?['category'];
-                    return Column(
-                      children: [
-                        Text('$joke'),
-                        const SizedBox(
-                          height: 20,
-                        ),
-                        Text(
-                          '$category',
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    );
-                  }
-                },
-              ),
+    return FutureBuilder(
+      future: FirestoreService().getTopics(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const LoadingScreen();
+        } else if (snapshot.hasError) {
+          return Text('Errro: ${snapshot.error}');
+        } else if (snapshot.hasData) {
+          var topics = snapshot.data!;
+          return Scaffold(
+            appBar: AppBar(
+              backgroundColor: Colors.deepPurple[200],
+              title: const Text('Topics'),
             ),
-            ElevatedButton(
-              onPressed: () => _fetchJoke(),
-              child: const Text('New Superhero'),
-            )
-          ],
-        ),
-      ),
+            body: GridView.count(
+              padding: const EdgeInsets.all(20.0),
+              crossAxisSpacing: 10.0,
+              crossAxisCount: 2,
+              children: topics.map((topic) => Text(topic.title)).toList(),
+            ),
+            bottomNavigationBar: const BottomNavBar(),
+          );
+        } else {
+          return Text('da');
+        }
+      },
     );
   }
 }
